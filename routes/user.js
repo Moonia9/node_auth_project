@@ -83,6 +83,38 @@ router.post("/sign-up", async (req, res) => {
   // }
 });
 
+//only allow access if the req contained a header with a valid json webtoken
+function authMiddleware(req, res, next) {
+  //get the jwt fro headers
+  const jwt = req.header("authorization");
+  //validate JWT
+  const userId = utils.decodeJWT(jwt);
+  //if invalid return status 401 - unauthorized
+  if (!userId) {
+    res.status(401).send();
+    return;
+  }
+  //otherwise
+  req.userId = userId;
+  next();
+}
+
+router.get("/auth", authMiddleware, function (req, res) {
+  //find user with the ID that is in the JWT
+  const user = usersDb.find((user) => user.id == req.userId);
+
+  if (!userId) {
+    res.status(404).send();
+    return;
+  }
+
+  //otherwise return a json objectwith that id and the user's email
+  res.send({
+    id: userId,
+    email: user.email,
+  });
+});
+
 router.post("/sign-in", function (req, res) {
   //get email and password from body
   const { email, password } = req.body;
@@ -104,7 +136,7 @@ router.post("/sign-in", function (req, res) {
   //calculate a jwt for this user's id
   const jwt = utils.generateJWT(user.id);
   //return it with status 200
-  res.status(200).send({ jwt : jwt });
+  res.status(200).send({ jwt: jwt });
   return;
 });
 
